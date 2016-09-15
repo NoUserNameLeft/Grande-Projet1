@@ -1,0 +1,9 @@
+﻿  BTtrenlop.cpp
+e:\code stuff\lt windows\grand projet\bttrenlop\bttrenlop\resource.h(16): warning C4005: 'IDCANCEL': macro redefinition
+  c:\program files (x86)\windows kits\8.1\include\um\winuser.h(10565): note: see previous definition of 'IDCANCEL'
+e:\code stuff\lt windows\grand projet\bttrenlop\bttrenlop\bttrenlop.cpp(141): warning C4244: 'initializing': conversion from '__int64' to 'int', possible loss of data
+e:\code stuff\lt windows\grand projet\bttrenlop\bttrenlop\bttrenlop.cpp(143): warning C4244: 'return': conversion from 'LPARAM' to 'int', possible loss of data
+e:\code stuff\lt windows\grand projet\bttrenlop\bttrenlop\bttrenlop.cpp(284): warning C4244: 'initializing': conversion from '__int64' to 'int', possible loss of data
+e:\code stuff\lt windows\grand projet\bttrenlop\bttrenlop\bttrenlop.cpp(285): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+e:\code stuff\lt windows\grand projet\bttrenlop\bttrenlop\bttrenlop.cpp(613): warning C4101: 'temp': unreferenced local variable
+  BTtrenlop.vcxproj -> E:\Code stuff\LT Windows\grand projet\BTtrenlop\x64\Debug\BTtrenlop.exe
