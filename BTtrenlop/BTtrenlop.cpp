@@ -44,11 +44,12 @@ HWND							hWndTxtB_DIR;
 HWND							hWndTxtB_FILE;
 HWND							hWndBtt_Browse;
 HWND							hWndBtt_Search;
-TCHAR							szDir[MAX_PATH], szb4Dir[MAX_PATH];
+TCHAR							szDir[MAX_PATH], szb4Dir[MAX_PATH], szafDir[MAX_PATH], szDirsrc[MAX_PATH];
 TCHAR							lpszPassword[MAX_PATH];
-std::vector<WIN32_FIND_DATA>	ffd;
+std::vector<WIN32_FIND_DATA>	ffd, ffdCoC;
 std::vector<TCHAR*>				CopyOrCut;
 BOOL							COPY;
+BOOL							backed = FALSE;
 INT								uCountFindData = 0;
 int								EnterPressed = 0;
 
@@ -528,7 +529,7 @@ BOOL ShowContent(HWND hWnd, TCHAR directory[])
 		}
 		uCountFindData++;
 	} while (FindNextFile(hFind, &temp) != 0);
-	StringCchCopy(szDir, MAX_PATH, directory);
+	
 	SetWindowText(hWndTxtB_DIR, directory);
 	FindClose(hFind);
 	InitListViewItem(hWndLV);
@@ -608,16 +609,12 @@ LRESULT CALLBACK LVProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam, U
 			if (GetAsyncKeyState(VK_CONTROL)) 
 			{
 				COPY = TRUE;
-				CopyOrCut.clear();
+				ffdCoC.clear();
+				StringCchCopy(szDirsrc, MAX_PATH, szDir);
 				iSelected = ListView_GetNextItem(hwnd, -1, LVNI_SELECTED);
-				TCHAR temp[MAX_PATH];
-				CopyOrCut.push_back(&(*szDir));
-				MessageBox(hwnd, CopyOrCut[0], CopyOrCut[0], MB_OK);
 				while (iSelected != -1)
 				{
-					TCHAR temp1[MAX_PATH];
-					StringCchCopy(temp1, MAX_PATH, ffd[iSelected].cFileName);
-					CopyOrCut.push_back(temp1);
+					ffdCoC.push_back(ffd[iSelected]);
 					iSelected = ListView_GetNextItem(hwnd, iSelected, LVNI_SELECTED);
 				}
 			}
@@ -627,17 +624,12 @@ LRESULT CALLBACK LVProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam, U
 			if (GetAsyncKeyState(VK_CONTROL))
 			{
 				COPY = FALSE;
-				CopyOrCut.clear();
+				ffdCoC.clear();
+				StringCchCopy(szDirsrc, MAX_PATH, szDir);
 				iSelected = ListView_GetNextItem(hwnd, -1, LVNI_SELECTED);
-				TCHAR temp[MAX_PATH];
-				StringCchCopy(temp, MAX_PATH, szDir);
-				CopyOrCut.push_back(&(*szDir));
-				MessageBox(hwnd, CopyOrCut[0], CopyOrCut[0], MB_OK);
 				while (iSelected != -1)
 				{
-					TCHAR temp1[MAX_PATH];
-					StringCchCopy(temp1, MAX_PATH, ffd[iSelected].cFileName);
-					CopyOrCut.push_back(temp1);
+					ffdCoC.push_back(ffd[iSelected]);
 					iSelected = ListView_GetNextItem(hwnd, iSelected, LVNI_SELECTED);
 				}
 			}
@@ -647,8 +639,7 @@ LRESULT CALLBACK LVProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam, U
 			if (GetAsyncKeyState(VK_CONTROL)) 
 			{
 				TCHAR path_src[MAX_PATH], path_des[MAX_PATH];
-				StringCchCopy(path_src, MAX_PATH, CopyOrCut[0]);
-				MessageBox(hwnd, CopyOrCut[0], CopyOrCut[0], MB_OK);
+				StringCchCopy(path_src, MAX_PATH, szDirsrc);
 				StringCchCopy(path_des, MAX_PATH, szDir);
 				if (wcslen(path_src) != 3)
 				{
@@ -660,25 +651,27 @@ LRESULT CALLBACK LVProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam, U
 				}
 				if (COPY)
 				{
-					for (int i = 1; i < CopyOrCut.size(); i++)
+					for (int i = 0; i < ffdCoC.size(); i++)
 					{
 						TCHAR src[MAX_PATH], des[MAX_PATH];
 						StringCchCopy(src, MAX_PATH, path_src);
-						StringCchCat(src, MAX_PATH, CopyOrCut[i]);
+						StringCchCat(src, MAX_PATH, ffdCoC[i].cFileName);
 						StringCchCopy(des, MAX_PATH, path_des);
-						StringCchCat(des, MAX_PATH, CopyOrCut[i]);
-						MessageBox(hwnd, path_src, path_des, MB_OK);
-						/*if (!CopyFile(src, des, TRUE))
+						StringCchCat(des, MAX_PATH, ffdCoC[i].cFileName);
+						if (!CopyFile(src, des, TRUE))
 						{
-							if (6 == MessageBox(hwnd, 
-								_T("File number %d already existed.\nWould you like to overwrite it?", i), _T("Error"), MB_YESNO))
+							TCHAR msgExist[300];
+							StringCchCopy(msgExist, 300, _T("The "));
+							StringCchCat(msgExist, 300, ffdCoC[i].cFileName);
+							StringCchCat(msgExist, 300, _T(" file has already existed.\nWould you like to overwrite it?"));
+							if (6 == MessageBox(hwnd, msgExist, _T("Error"), MB_YESNO))
 							{
 								CopyFile(src, des, FALSE);
 							}
 							else {
-								MessageBox(hwnd, _T("File number %d is not copied.", i), _T(""), MB_OK);
+								MessageBox(hwnd, _T("File is not copied.", i), _T(""), MB_OK);
 							}
-						}*/
+						}
 					}
 				}
 				else
@@ -693,6 +686,7 @@ LRESULT CALLBACK LVProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam, U
 						MoveFile(src, des);
 					}
 				}
+				SendMessage(GetParent(hwnd), WM_COMMAND, BUTTON_BROWSE, 0);
 			}
 			return TRUE;
 			break;
@@ -734,6 +728,11 @@ LRESULT CALLBACK LVProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam, U
 				if (!ShowContent(GetParent(hwnd), temp))
 				{
 					ShowContent(GetParent(hwnd), szDir);
+				}
+				else
+				{
+					StringCchCopy(szb4Dir, MAX_PATH, szDir);
+					StringCchCopy(szDir, MAX_PATH, temp);
 				}
 			}
 			else
@@ -913,7 +912,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					}
 					else
 					{
-						
+						StringCchCopy(szb4Dir, MAX_PATH, szDir);
+						StringCchCopy(szDir, MAX_PATH, temp);
 					}
 				}
 				else
@@ -1046,6 +1046,28 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				}
 				
 			}
+				break;
+			case ID_NAVIGATE_BACK:
+				if (!backed)
+				{
+					ListView_DeleteAllItems(hWndLV);
+					uCountFindData = 0;
+					backed = TRUE;
+					StringCchCopy(szafDir, MAX_PATH, szDir);
+					StringCchCopy(szDir, MAX_PATH, szb4Dir);
+					ShowContent(hWnd, szDir);
+				}
+				break;
+			case ID_NAVIGATE_FORTH:
+				if (backed)
+				{
+					ListView_DeleteAllItems(hWndLV);
+					uCountFindData = 0;
+					backed = FALSE;
+					StringCchCopy(szb4Dir, MAX_PATH, szDir);
+					StringCchCopy(szDir, MAX_PATH, szafDir);
+					ShowContent(hWnd, szDir);
+				}
 				break;
 			case ID_FILE_BROWSE:				
 				bi.lpszTitle = _T("Choose a folder");
