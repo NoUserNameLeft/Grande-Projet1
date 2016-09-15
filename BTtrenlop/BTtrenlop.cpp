@@ -503,6 +503,10 @@ INT_PTR CALLBACK CreateFolderProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM
 //		The hien noi dung trong duong dan(global var vector<WIN32_FIND_DATA> ffd)	
 BOOL ShowContent(HWND hWnd, TCHAR directory[])
 {
+	if (backed)
+	{
+		backed = FALSE;
+	}
 	TCHAR tempDir[MAX_PATH];
 	StringCchCopy(tempDir, MAX_PATH, directory);
 	if (wcslen(directory) == 3) // drives
@@ -603,6 +607,25 @@ LRESULT CALLBACK LVProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam, U
 			if (GetAsyncKeyState(VK_CONTROL))
 			{
 				iSelected = ListView_GetNextItem(hwnd, -1, LVNI_SELECTED);
+				if (iSelected != -1 && ListView_GetNextItem(hwnd, iSelected, LVNI_SELECTED) == -1)
+				{
+					DialogBox(hInst, MAKEINTRESOURCE(IDD_DIALOG1), hwnd, CreateFolderProc);
+					TCHAR newName[100];
+					StringCchCopy(newName, 100, lpszPassword);
+					TCHAR szOld[MAX_PATH], szNew[MAX_PATH];
+					StringCchCopy(szOld, 100, szDir);
+					StringCchCopy(szNew, 100, szDir);
+					if (wcslen(szDir) != 3) 
+					{
+						StringCchCat(szOld, 100, _T("\\"));
+						StringCchCat(szNew, 100, _T("\\"));
+					}
+					StringCchCat(szOld, 100, ffd[iSelected].cFileName);
+					StringCchCat(szNew, 100, newName);
+					MoveFile(szOld, szNew);
+					SendMessage(GetParent(hwnd), WM_COMMAND, BUTTON_BROWSE, 0);
+				}
+				
 			}
 			return TRUE;
 		case 'C':	//copy
@@ -690,10 +713,10 @@ LRESULT CALLBACK LVProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam, U
 			}
 			return TRUE;
 			break;
-		case VK_F5:
+		case VK_F5: //refresh
 			SendMessage(GetParent(hwnd), WM_COMMAND, BUTTON_BROWSE, 0);
 			return TRUE;
-		case VK_DELETE:
+		case VK_DELETE:	//delete
 			iSelected = ListView_GetNextItem(hwnd, -1, LVNI_SELECTED);
 			while (iSelected != -1)
 			{
@@ -858,7 +881,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	
+	int iSelected;
     switch (message)
     {
 	case WM_CREATE:		
@@ -979,6 +1002,79 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 			}
 			break;
+			case ID_FILE_COPY:
+				COPY = TRUE;
+				ffdCoC.clear();
+				StringCchCopy(szDirsrc, MAX_PATH, szDir);
+				iSelected = ListView_GetNextItem(hWndLV, -1, LVNI_SELECTED);
+				while (iSelected != -1)
+				{
+					ffdCoC.push_back(ffd[iSelected]);
+					iSelected = ListView_GetNextItem(hWndLV, iSelected, LVNI_SELECTED);
+				}
+				break;
+			case ID_FILE_CUT:
+				COPY = FALSE;
+				ffdCoC.clear();
+				StringCchCopy(szDirsrc, MAX_PATH, szDir);
+				iSelected = ListView_GetNextItem(hWndLV, -1, LVNI_SELECTED);
+				while (iSelected != -1)
+				{
+					ffdCoC.push_back(ffd[iSelected]);
+					iSelected = ListView_GetNextItem(hWndLV, iSelected, LVNI_SELECTED);
+				}
+				break;
+			case ID_FILE_PASTE:
+				TCHAR path_src[MAX_PATH], path_des[MAX_PATH];
+				StringCchCopy(path_src, MAX_PATH, szDirsrc);
+				StringCchCopy(path_des, MAX_PATH, szDir);
+				if (wcslen(path_src) != 3)
+				{
+					StringCchCat(path_src, MAX_PATH, _T("\\"));
+				}
+				if (wcslen(path_des) != 3)
+				{
+					StringCchCat(path_des, MAX_PATH, _T("\\"));
+				}
+				if (COPY)
+				{
+					for (int i = 0; i < ffdCoC.size(); i++)
+					{
+						TCHAR src[MAX_PATH], des[MAX_PATH];
+						StringCchCopy(src, MAX_PATH, path_src);
+						StringCchCat(src, MAX_PATH, ffdCoC[i].cFileName);
+						StringCchCopy(des, MAX_PATH, path_des);
+						StringCchCat(des, MAX_PATH, ffdCoC[i].cFileName);
+						if (!CopyFile(src, des, TRUE))
+						{
+							TCHAR msgExist[300];
+							StringCchCopy(msgExist, 300, _T("The "));
+							StringCchCat(msgExist, 300, ffdCoC[i].cFileName);
+							StringCchCat(msgExist, 300, _T(" file has already existed.\nWould you like to overwrite it?"));
+							if (6 == MessageBox(hWnd, msgExist, _T("Error"), MB_YESNO))
+							{
+								CopyFile(src, des, FALSE);
+							}
+							else {
+								MessageBox(hWnd, _T("File is not copied.", i), _T(""), MB_OK);
+							}
+						}
+					}
+				}
+				else
+				{
+					for (int i = 1; i < CopyOrCut.size(); i++)
+					{
+						TCHAR src[MAX_PATH], des[MAX_PATH];
+						StringCchCopy(src, MAX_PATH, path_src);
+						StringCchCat(src, MAX_PATH, CopyOrCut[i]);
+						StringCchCopy(des, MAX_PATH, path_des);
+						StringCchCat(des, MAX_PATH, CopyOrCut[i]);
+						MoveFile(src, des);
+					}
+				}
+				SendMessage(hWnd, WM_COMMAND, BUTTON_BROWSE, 0);
+				break;
 			case ID_VIEW_REPORT:
 			{
 				SetWindowLong(hWndLV, GWL_STYLE, (LONG)(WS_CHILD | LVS_REPORT | WS_VISIBLE));
@@ -1069,6 +1165,28 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					ShowContent(hWnd, szDir);
 				}
 				break;
+			case ID_FILE_RENAME:
+				iSelected = ListView_GetNextItem(hWndLV, -1, LVNI_SELECTED);
+				if (iSelected != -1 && ListView_GetNextItem(hWndLV, iSelected, LVNI_SELECTED) == -1)
+				{
+					DialogBox(hInst, MAKEINTRESOURCE(IDD_DIALOG1), hWnd, CreateFolderProc);
+					TCHAR newName[100];
+					StringCchCopy(newName, 100, lpszPassword);
+					TCHAR szOld[MAX_PATH], szNew[MAX_PATH];
+					StringCchCopy(szOld, 100, szDir);
+					StringCchCopy(szNew, 100, szDir);
+					if (wcslen(szDir) != 3)
+					{
+						StringCchCat(szOld, 100, _T("\\"));
+						StringCchCat(szNew, 100, _T("\\"));
+					}
+					StringCchCat(szOld, 100, ffd[iSelected].cFileName);
+					StringCchCat(szNew, 100, newName);
+					MessageBox(hWnd, szOld, szNew, MB_OK);
+					MoveFile(szOld, szNew);
+					SendMessage(hWnd, WM_COMMAND, BUTTON_BROWSE, 0);
+				}
+				break;
 			case ID_FILE_BROWSE:				
 				bi.lpszTitle = _T("Choose a folder");
 				pidl = SHBrowseForFolder(&bi);
@@ -1087,11 +1205,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 						imalloc->Free(pidl);
 						imalloc->Release();
 					}*/
-					StringCchCopy(szb4Dir, MAX_PATH, path);
-					StringCchCopy(szDir, MAX_PATH, path);
-					ShowContent(hWnd, szDir);
-					SetWindowText(hWndTxtB_DIR, path);
-					
+					if (wcslen(path) != 0)
+					{
+						StringCchCopy(szb4Dir, MAX_PATH, path);
+						StringCchCopy(szDir, MAX_PATH, path);
+						ShowContent(hWnd, szDir);
+						SetWindowText(hWndTxtB_DIR, path);
+					}
 				}
 				break;
             case IDM_ABOUT:

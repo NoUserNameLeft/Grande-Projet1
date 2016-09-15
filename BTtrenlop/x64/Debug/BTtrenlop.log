@@ -5,5 +5,6 @@ e:\code stuff\lt windows\grand projet\bttrenlop\bttrenlop\bttrenlop.cpp(142): wa
 e:\code stuff\lt windows\grand projet\bttrenlop\bttrenlop\bttrenlop.cpp(144): warning C4244: 'return': conversion from 'LPARAM' to 'int', possible loss of data
 e:\code stuff\lt windows\grand projet\bttrenlop\bttrenlop\bttrenlop.cpp(285): warning C4244: 'initializing': conversion from '__int64' to 'int', possible loss of data
 e:\code stuff\lt windows\grand projet\bttrenlop\bttrenlop\bttrenlop.cpp(286): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-e:\code stuff\lt windows\grand projet\bttrenlop\bttrenlop\bttrenlop.cpp(673): warning C4002: too many actual parameters for macro '_T'
+e:\code stuff\lt windows\grand projet\bttrenlop\bttrenlop\bttrenlop.cpp(695): warning C4002: too many actual parameters for macro '_T'
+e:\code stuff\lt windows\grand projet\bttrenlop\bttrenlop\bttrenlop.cpp(1059): warning C4002: too many actual parameters for macro '_T'
   BTtrenlop.vcxproj -> E:\Code stuff\LT Windows\grand projet\BTtrenlop\x64\Debug\BTtrenlop.exe
