@@ -12,11 +12,15 @@
 #include <Thumbcache.h>
 #include <Shobjidl.h>
 #include <shlwapi.h>
+#include <gdiplus.h>
+
+using namespace Gdiplus;
 
 #pragma comment(lib, "shlwapi.lib")
 #pragma comment(lib, "Shell32.lib")
 #pragma comment(lib, "User32.lib")
 #pragma comment(lib, "Comctl32.lib")
+#pragma comment(lib,"gdiplus.lib")
 
 #pragma comment(linker,"\"/manifestdependency:type='win32' \
 name='Microsoft.Windows.Common-Controls' version='6.0.0.0' \
@@ -31,6 +35,7 @@ processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #define ID_TREEVIEW 654
 #define ID_BROWSE 555
 #define ID_SEARCH 666
+#define ID_STT 1003
 
 
 
@@ -44,7 +49,8 @@ HWND							hWndTxtB_DIR;
 HWND							hWndTxtB_FILE;
 HWND							hWndBtt_Browse;
 HWND							hWndBtt_Search;
-TCHAR							szDir[MAX_PATH], szb4Dir[MAX_PATH], szafDir[MAX_PATH], szDirsrc[MAX_PATH];
+HWND							hWndSTT;
+TCHAR							szDir[MAX_PATH], szb4Dir[MAX_PATH], szafDir[MAX_PATH], szDirsrc[MAX_PATH], szDirImg[MAX_PATH];
 TCHAR							lpszPassword[MAX_PATH];
 std::vector<WIN32_FIND_DATA>	ffd, ffdCoC;
 std::vector<TCHAR*>				CopyOrCut;
@@ -52,6 +58,7 @@ BOOL							COPY;
 BOOL							backed = FALSE;
 INT								uCountFindData = 0;
 int								EnterPressed = 0;
+int								ImgMode = 0;
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -72,7 +79,8 @@ LRESULT	CALLBACK	SearchProc(HWND, UINT, WPARAM, LPARAM, UINT_PTR, DWORD_PTR);
 int CALLBACK		CompareListItems(LPARAM, LPARAM, LPARAM);
 void				OnColumnClick(LPNMLISTVIEW pLVInfo);
 LPWSTR				GetType(const WIN32_FIND_DATA &fd);
-INT_PTR CALLBACK	CreateFolderProc(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK	GetInputStringProc(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK	ImageProc(HWND, UINT, WPARAM, LPARAM);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -87,6 +95,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     // Initialize global strings
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_BTTRENLOP, szWindowClass, MAX_LOADSTRING);
+	GdiplusStartupInput gdiPlusInput;
+	ULONG_PTR			token;
+	GdiplusStartup(&token, &gdiPlusInput, NULL);
+
     MyRegisterClass(hInstance);
 
     // Perform application initialization:
@@ -108,7 +120,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
             DispatchMessage(&msg);
         }
     }
-
+	GdiplusShutdown(token);
     return (int) msg.wParam;
 }
 /*		SORT FUNCTIONS		*/
@@ -237,7 +249,7 @@ HWND CreateListView(HWND hwndParent)
 		WS_CHILD | LVS_REPORT | WS_VISIBLE,
 		100, 70,
 		rcClient.right - rcClient.left - 100,
-		rcClient.bottom - rcClient.top - 40, 
+		rcClient.bottom - rcClient.top - 85, 
 		hwndParent,
 		(HMENU)IDM_CODE_SAMPLES,
 		hInst,
@@ -338,8 +350,8 @@ LPWSTR GetType(const WIN32_FIND_DATA &fd)
 
 	return pszPath;
 }
-//		Ham cho dialog Create - dat ten cho folder moi
-INT_PTR CALLBACK CreateFolderProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+//		Proc danh cho dialog lay chuoi tu user (dung trong rename va new)
+INT_PTR CALLBACK GetInputStringProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
 
 	WORD cchPassword;
@@ -438,7 +450,62 @@ INT_PTR CALLBACK CreateFolderProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM
 
 	UNREFERENCED_PARAMETER(lParam);
 }
-
+//		Proc xuat hinh anh
+INT_PTR CALLBACK ImageProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+{
+	switch (message)
+	{
+	case WM_PAINT:
+	{
+		PAINTSTRUCT ps;
+		Image pic(szDirImg, true);
+		Graphics graphic(GetDC(hDlg));
+		Color blueColor(255, 255, 255, 255);
+		switch (ImgMode)
+		{
+		case 1:	//diaporama
+			for (int i = 0; i < ffd.size(); i++)
+			{
+				if (StrCmpI(GetType(ffd[i]), _T("PNG Image")) == 0
+					|| StrCmpI(GetType(ffd[i]), _T("JPEG Image")) == 0
+					|| StrCmpI(GetType(ffd[i]), _T("Bitmap Image")) == 0)
+				{
+					TCHAR tempDir[MAX_PATH];
+					StringCchCopy(tempDir, MAX_PATH, szDir);
+					if (wcslen(tempDir) != 3)
+					{
+						StringCchCat(tempDir, MAX_PATH, _T("\\"));
+					}
+					StringCchCat(tempDir, MAX_PATH, ffd[i].cFileName);
+					Image pic1(tempDir, true);
+					graphic.DrawImage(&pic1, 0, 0);
+					Sleep(500);
+					graphic.Clear(blueColor);
+				}
+			}
+			return 0;
+		default:			
+			BeginPaint(hDlg, &ps);
+			
+			//Color blueColor(255, 255, 255, 255);
+			graphic.DrawImage(&pic, 0, 0);
+			/*Sleep(500);
+			Image pic2(_T("G:\\bao\\hinh\\vui\\67d9c3a4141682399311165048_700w_0.jpg"), true);
+			graphic.Clear(blueColor);
+			graphic.DrawImage(&pic2, 0, 0);*/
+			EndPaint(hDlg, &ps);
+			return 0;
+		}
+	}
+		break;
+	case WM_CLOSE:
+		EndDialog(hDlg, 0);
+		break;
+	default:
+		return FALSE;
+	}
+	return FALSE;
+}
 
 //IShellItem* GetShellItem(PTSTR lpszFileName)
 //{
@@ -503,10 +570,7 @@ INT_PTR CALLBACK CreateFolderProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM
 //		The hien noi dung trong duong dan(global var vector<WIN32_FIND_DATA> ffd)	
 BOOL ShowContent(HWND hWnd, TCHAR directory[])
 {
-	if (backed)
-	{
-		backed = FALSE;
-	}
+	
 	TCHAR tempDir[MAX_PATH];
 	StringCchCopy(tempDir, MAX_PATH, directory);
 	if (wcslen(directory) == 3) // drives
@@ -609,7 +673,7 @@ LRESULT CALLBACK LVProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam, U
 				iSelected = ListView_GetNextItem(hwnd, -1, LVNI_SELECTED);
 				if (iSelected != -1 && ListView_GetNextItem(hwnd, iSelected, LVNI_SELECTED) == -1)
 				{
-					DialogBox(hInst, MAKEINTRESOURCE(IDD_DIALOG1), hwnd, CreateFolderProc);
+					DialogBox(hInst, MAKEINTRESOURCE(IDD_DIALOG1), hwnd, GetInputStringProc);
 					TCHAR newName[100];
 					StringCchCopy(newName, 100, lpszPassword);
 					TCHAR szOld[MAX_PATH], szNew[MAX_PATH];
@@ -736,32 +800,50 @@ LRESULT CALLBACK LVProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam, U
 			SendMessage(GetParent(hwnd), WM_COMMAND, BUTTON_BROWSE, 0);
 			return TRUE;
 		case VK_RETURN:
-			iSelected = ListView_GetNextItem(hwnd, -1, LVNI_SELECTED);
-			if (-1 != iSelected	&&	ListView_GetNextItem(hwnd, iSelected, LVNI_SELECTED) == -1)	//chi chon 1 item
+			if (backed)
 			{
-				ListView_DeleteAllItems(hwnd);
-				uCountFindData = 0;
-				TCHAR temp[MAX_PATH];
-				StringCchCopy(temp, MAX_PATH, szDir);
-				if (wcslen(temp) != 3) 
+				backed = FALSE;
+			}
+			iSelected = ListView_GetNextItem(hwnd, -1, LVNI_SELECTED);
+			if (-1 != iSelected	&&	ListView_GetNextItem(hWndLV, iSelected, LVNI_SELECTED) == -1)	//chi chon 1 item
+			{
+				if (StrCmpI(GetType(ffd[iSelected]), _T("PNG Image")) == 0
+					|| StrCmpI(GetType(ffd[iSelected]), _T("JPEG Image")) == 0
+					|| StrCmpI(GetType(ffd[iSelected]), _T("Bitmap Image")) == 0)
 				{
-					StringCchCat(temp, MAX_PATH, _T("\\"));
-				}
-				StringCchCat(temp, MAX_PATH, ffd[iSelected].cFileName);
-				if (!ShowContent(GetParent(hwnd), temp))
-				{
-					ShowContent(GetParent(hwnd), szDir);
+					StringCchCopy(szDirImg, MAX_PATH, szDir);
+					if (wcslen(szDirImg) != 3)
+						StringCchCat(szDirImg, MAX_PATH, _T("\\"));
+					StringCchCat(szDirImg, MAX_PATH, ffd[iSelected].cFileName);
+					DialogBox(hInst, MAKEINTRESOURCE(IDD_DIALOG2), GetParent(hwnd), ImageProc);
 				}
 				else
 				{
-					StringCchCopy(szb4Dir, MAX_PATH, szDir);
-					StringCchCopy(szDir, MAX_PATH, temp);
+					ListView_DeleteAllItems(hwnd);
+					uCountFindData = 0;
+					TCHAR temp[MAX_PATH];
+					StringCchCopy(temp, MAX_PATH, szDir);
+					if (wcslen(temp) != 3)
+					{
+						StringCchCat(temp, MAX_PATH, _T("\\"));
+					}
+					StringCchCat(temp, MAX_PATH, ffd[iSelected].cFileName);
+					if (!ShowContent(GetParent(hwnd), temp))
+					{
+						ShowContent(GetParent(hwnd), szDir);
+					}
+					else
+					{
+						StringCchCopy(szb4Dir, MAX_PATH, szDir);
+						StringCchCopy(szDir, MAX_PATH, temp);
+					}
 				}
 			}
 			else
 			{
 				MessageBox(GetParent(hwnd), _T("Can't open multiple folder."), _T("Error"), MB_OK);
 			}
+				
 
 			return TRUE;
 			break;
@@ -822,6 +904,7 @@ LRESULT CALLBACK SearchProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
 //
 ATOM MyRegisterClass(HINSTANCE hInstance)
 {
+
     WNDCLASSEXW wcex;
 
     wcex.cbSize = sizeof(WNDCLASSEX);
@@ -884,11 +967,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	int iSelected;
     switch (message)
     {
-	case WM_CREATE:		
+	case WM_CREATE:	
+		RECT rect;
+		GetWindowRect(hWnd, &rect);
 		/*		Tao Controls		*/
 		//		EditControls
 		hWndTxtB_DIR = CreateWindow(L"EDIT", L"", WS_BORDER | WS_VISIBLE | WS_CHILDWINDOW, 150, 50, 400, 20, hWnd, (HMENU)ID_BROWSE, NULL, NULL);		//Browse
 		hWndTxtB_FILE = CreateWindow(L"EDIT", L"", WS_BORDER | WS_VISIBLE | WS_CHILDWINDOW, 640, 50, 200, 20, hWnd, (HMENU)ID_SEARCH, NULL, NULL);		//Search
+		hWndSTT = CreateWindowEx(0, STATUSCLASSNAME, (PCTSTR)NULL,																				//Status bar
+			SBARS_SIZEGRIP | WS_CHILD | WS_VISIBLE, 50,(rect.bottom - rect.top - 20), 
+			rect.right - rect.left - 20, 20, hWnd, (HMENU)ID_STT, hInst, NULL);
 
 		//ButtonControls
 		hWndBtt_Browse = CreateWindow(L"BUTTON", L"Browse", WS_BORDER | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,		//Browse
@@ -901,15 +989,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		if (hWndLV == NULL) {
 			MessageBox(NULL, _T("Listview not created!"), NULL, MB_OK);
 		}
-		InitListViewCol(hWndLV);
+		/*		Tao xong		*/	
 
+		/*		Gan cac gia tri ban dau		*/	
+		InitListViewCol(hWndLV);		//Columns cho LV
+		SendMessage(hWndSTT, SB_SETTEXT, 0, (LPARAM)L"This is the  status bar");
 
 		/*		Tao SubClass		*/	
 		OnSafeSubclass(hWnd, LVProc, IDM_CODE_SAMPLES);		//LV
 		OnSafeSubclass(hWnd, BrowseProc, ID_BROWSE);		//Browse
 		OnSafeSubclass(hWnd, SearchProc, ID_SEARCH);		//Search
 
-		/*		Mo cac o dia va desktop		*/
 
 		break;
 	case WM_NOTIFY:
@@ -919,30 +1009,65 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case IDM_CODE_SAMPLES:
 			if (((LPNMHDR)lParam)->code == NM_DBLCLK)
 			{
+				if (backed)
+				{
+					backed = FALSE;
+				}
 				int iSelected = ListView_GetNextItem(hWndLV, -1, LVNI_SELECTED);
 				if (-1 != iSelected	&&	ListView_GetNextItem(hWndLV, iSelected, LVNI_SELECTED) == -1)	//chi chon 1 item
 				{
-					ListView_DeleteAllItems(hWndLV);
-					uCountFindData = 0;
-					TCHAR temp[MAX_PATH];
-					StringCchCopy(temp, MAX_PATH, szDir);
-					if (wcslen(temp) != 3)
-						StringCchCat(temp, MAX_PATH, _T("\\"));
-					StringCchCat(temp, MAX_PATH, ffd[iSelected].cFileName);
-					if (!ShowContent(hWnd, temp))
+					if (StrCmpI(GetType(ffd[iSelected]), _T("PNG Image")) == 0
+						|| StrCmpI(GetType(ffd[iSelected]), _T("JPEG Image")) == 0
+						|| StrCmpI(GetType(ffd[iSelected]), _T("Bitmap Image")) == 0)
 					{
-						ShowContent(hWnd, szDir);
+						StringCchCopy(szDirImg, MAX_PATH, szDir);
+						if (wcslen(szDirImg) != 3)
+							StringCchCat(szDirImg, MAX_PATH, _T("\\"));
+						StringCchCat(szDirImg, MAX_PATH, ffd[iSelected].cFileName);
+						DialogBox(hInst, MAKEINTRESOURCE(IDD_DIALOG2), hWnd, ImageProc);
+						
+						
 					}
-					else
+					else 
 					{
-						StringCchCopy(szb4Dir, MAX_PATH, szDir);
-						StringCchCopy(szDir, MAX_PATH, temp);
+						ListView_DeleteAllItems(hWndLV);
+						uCountFindData = 0;
+						TCHAR temp[MAX_PATH];
+						StringCchCopy(temp, MAX_PATH, szDir);
+						if (wcslen(temp) != 3)
+							StringCchCat(temp, MAX_PATH, _T("\\"));
+						StringCchCat(temp, MAX_PATH, ffd[iSelected].cFileName);
+						if (!ShowContent(hWnd, temp))
+						{
+							ShowContent(hWnd, szDir);
+						}
+						else
+						{
+							StringCchCopy(szb4Dir, MAX_PATH, szDir);
+							StringCchCopy(szDir, MAX_PATH, temp);
+						}
 					}
 				}
 				else
 				{
 					MessageBox(hWnd, _T("Can't open multiple folder."), _T("Error"), MB_OK);
 				}				
+			}
+			if (((LPNMHDR)lParam)->code == NM_CLICK)
+			{
+				int iSelected = ListView_GetNextItem(hWndLV, -1, LVNI_SELECTED);
+				if (iSelected != -1 && ListView_GetNextItem(hWndLV, iSelected, LVNI_SELECTED) == -1)	//da chon 1 item
+				{
+					SendMessage(hWndSTT, SB_SETTEXT, 0, (LPARAM)L"1 item selected");
+
+				}
+				else
+				{
+					if (iSelected != -1 && ListView_GetNextItem(hWndLV, iSelected, LVNI_SELECTED) != -1)	//chon nhieu items
+					{
+						SendMessage(hWndSTT, SB_SETTEXT, 0, (LPARAM)L"Multiple items selected");
+					}
+				}
 			}
 			if ((((LPNMHDR)lParam)->idFrom == IDM_CODE_SAMPLES) && (((LPNMHDR)lParam)->code == LVN_COLUMNCLICK))
 			{
@@ -987,6 +1112,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             {
 			case BUTTON_BROWSE:
 			{
+				if (backed)
+				{
+					backed = FALSE;
+				}
 				DIRLen = GetWindowTextLength(hWndTxtB_DIR);
 				if (DIRLen != 0) {
 					ListView_DeleteAllItems(hWndLV);
@@ -1063,13 +1192,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				}
 				else
 				{
-					for (int i = 1; i < CopyOrCut.size(); i++)
+					for (int i = 0; i < ffdCoC.size(); i++)
 					{
 						TCHAR src[MAX_PATH], des[MAX_PATH];
 						StringCchCopy(src, MAX_PATH, path_src);
-						StringCchCat(src, MAX_PATH, CopyOrCut[i]);
+						StringCchCat(src, MAX_PATH, ffdCoC[i].cFileName);
 						StringCchCopy(des, MAX_PATH, path_des);
-						StringCchCat(des, MAX_PATH, CopyOrCut[i]);
+						StringCchCat(des, MAX_PATH, ffdCoC[i].cFileName);
 						MoveFile(src, des);
 					}
 				}
@@ -1090,9 +1219,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				SetWindowLong(hWndLV, GWL_STYLE, (LONG)(WS_CHILD | LVS_LIST | WS_VISIBLE));
 			}
 			break;
+			case DIAPORAMA:
+				ImgMode = 1;
+				DialogBox(hInst, MAKEINTRESOURCE(IDD_DIALOG2), NULL, ImageProc);
+				ImgMode = 0;
+				break;
 			case BUTTON_SEARCH:
 			{
-				MessageBox(hWnd, szb4Dir, szDir, MB_OK);
+				MessageBox(hWnd, _T("This function is not available."), _T("Error"), MB_OK);
 				//TCHAR Pattern[1000], SearchTerm[MAX_PATH];
 				//StringCchCopy(SearchTerm, MAX_PATH, szDir);
 				//GetWindowText(hWndTxtB_FILE, Pattern, MAX_PATH);
@@ -1125,7 +1259,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					StringCchCat(newDir, MAX_PATH, _T("\\"));
 				}
 				
-				DialogBox(hInst, MAKEINTRESOURCE(IDD_DIALOG1), hWnd, CreateFolderProc);
+				DialogBox(hInst, MAKEINTRESOURCE(IDD_DIALOG1), hWnd, GetInputStringProc);
 				StringCchCat(newDir, MAX_PATH, lpszPassword);
 				
 
@@ -1169,7 +1303,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 				iSelected = ListView_GetNextItem(hWndLV, -1, LVNI_SELECTED);
 				if (iSelected != -1 && ListView_GetNextItem(hWndLV, iSelected, LVNI_SELECTED) == -1)
 				{
-					DialogBox(hInst, MAKEINTRESOURCE(IDD_DIALOG1), hWnd, CreateFolderProc);
+					DialogBox(hInst, MAKEINTRESOURCE(IDD_DIALOG1), hWnd, GetInputStringProc);
 					TCHAR newName[100];
 					StringCchCopy(newName, 100, lpszPassword);
 					TCHAR szOld[MAX_PATH], szNew[MAX_PATH];
@@ -1187,7 +1321,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 					SendMessage(hWnd, WM_COMMAND, BUTTON_BROWSE, 0);
 				}
 				break;
-			case ID_FILE_BROWSE:				
+			case ID_FILE_BROWSE:
+				if (backed)
+				{
+					backed = FALSE;
+				}
 				bi.lpszTitle = _T("Choose a folder");
 				pidl = SHBrowseForFolder(&bi);
 				if (pidl != 0)
@@ -1238,6 +1376,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
         break;
     case WM_DESTROY:
+		//		UnSubClass cac Control
 		OnSafeUnSubclass(hWnd, LVProc, IDM_CODE_SAMPLES);					//LV
 		OnSafeUnSubclass(hWnd, BrowseProc, GetDlgCtrlID(hWndTxtB_DIR));		//Browse
 		OnSafeUnSubclass(hWnd, SearchProc, GetDlgCtrlID(hWndTxtB_DIR));		//Search

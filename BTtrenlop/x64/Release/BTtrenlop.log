@@ -1,0 +1,15 @@
+﻿  BTtrenlop.cpp
+e:\code stuff\lt windows\grand projet\bttrenlop\bttrenlop\resource.h(17): warning C4005: 'IDCANCEL': macro redefinition
+  C:\Program Files (x86)\Windows Kits\8.1\Include\um\winuser.h(10565): note: see previous definition of 'IDCANCEL'
+BTtrenlop.cpp(154): warning C4244: 'initializing': conversion from '__int64' to 'int', possible loss of data
+BTtrenlop.cpp(156): warning C4244: 'return': conversion from 'LPARAM' to 'int', possible loss of data
+BTtrenlop.cpp(297): warning C4244: 'initializing': conversion from '__int64' to 'int', possible loss of data
+BTtrenlop.cpp(298): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+BTtrenlop.cpp(759): warning C4002: too many actual parameters for macro '_T'
+BTtrenlop.cpp(1188): warning C4002: too many actual parameters for macro '_T'
+  Generating code
+  1 of 167 functions ( 0.6%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    1 functions had inline decision re-evaluated but remain unchanged
+  Finished generating code
+  BTtrenlop.vcxproj -> E:\Code stuff\LT Windows\grand projet\BTtrenlop\x64\Release\BTtrenlop.exe

@@ -1,10 +1,10 @@
 ﻿  BTtrenlop.cpp
-e:\code stuff\lt windows\grand projet\bttrenlop\bttrenlop\resource.h(16): warning C4005: 'IDCANCEL': macro redefinition
+e:\code stuff\lt windows\grand projet\bttrenlop\bttrenlop\resource.h(17): warning C4005: 'IDCANCEL': macro redefinition
   c:\program files (x86)\windows kits\8.1\include\um\winuser.h(10565): note: see previous definition of 'IDCANCEL'
-e:\code stuff\lt windows\grand projet\bttrenlop\bttrenlop\bttrenlop.cpp(142): warning C4244: 'initializing': conversion from '__int64' to 'int', possible loss of data
-e:\code stuff\lt windows\grand projet\bttrenlop\bttrenlop\bttrenlop.cpp(144): warning C4244: 'return': conversion from 'LPARAM' to 'int', possible loss of data
-e:\code stuff\lt windows\grand projet\bttrenlop\bttrenlop\bttrenlop.cpp(285): warning C4244: 'initializing': conversion from '__int64' to 'int', possible loss of data
-e:\code stuff\lt windows\grand projet\bttrenlop\bttrenlop\bttrenlop.cpp(286): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-e:\code stuff\lt windows\grand projet\bttrenlop\bttrenlop\bttrenlop.cpp(695): warning C4002: too many actual parameters for macro '_T'
-e:\code stuff\lt windows\grand projet\bttrenlop\bttrenlop\bttrenlop.cpp(1059): warning C4002: too many actual parameters for macro '_T'
+e:\code stuff\lt windows\grand projet\bttrenlop\bttrenlop\bttrenlop.cpp(154): warning C4244: 'initializing': conversion from '__int64' to 'int', possible loss of data
+e:\code stuff\lt windows\grand projet\bttrenlop\bttrenlop\bttrenlop.cpp(156): warning C4244: 'return': conversion from 'LPARAM' to 'int', possible loss of data
+e:\code stuff\lt windows\grand projet\bttrenlop\bttrenlop\bttrenlop.cpp(297): warning C4244: 'initializing': conversion from '__int64' to 'int', possible loss of data
+e:\code stuff\lt windows\grand projet\bttrenlop\bttrenlop\bttrenlop.cpp(298): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+e:\code stuff\lt windows\grand projet\bttrenlop\bttrenlop\bttrenlop.cpp(759): warning C4002: too many actual parameters for macro '_T'
+e:\code stuff\lt windows\grand projet\bttrenlop\bttrenlop\bttrenlop.cpp(1188): warning C4002: too many actual parameters for macro '_T'
   BTtrenlop.vcxproj -> E:\Code stuff\LT Windows\grand projet\BTtrenlop\x64\Debug\BTtrenlop.exe
